@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Hunt-and-Peck</title>
+	<style>
+		* {
+			box-sizing: border-box;
+		}
+		body {
+			display: inline-flex;
+			flex-direction: column;
+			align-items: center;
+			min-width: 100%;
+		}
+		.controls {
+			width: 500px;
+			margin-bottom: 10px;
+		}
+		.controls label {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin: 5px 0;
+		}
+		.controls .grow-input {
+			width: 300px;
+			display: flex;
+		}
+		.controls .grow-input input,
+		.controls .grow-input textarea {
+			flex-grow: 1;
+		}
+		.break-all {
+			word-break: break-all;
+		}
+		#err {
+			color: red;
+		}
+		#canvas {
+			box-shadow: 0 0 5px #0005;
+		}
+	</style>
+	<script defer src="captioner.js"></script>
+</head>
+<body>
+	<div class="controls">
+		<label>
+			Font size:
+			<span class="grow-input">
+				<input type="range" id="size-in"
+					min="2" max="50" value="20">
+				(<span id="size-out">20</span>px)
+			</span>
+		</label>
+		<label>
+			Caption:
+			<span class="grow-input">
+			<textarea type="text" id="title-in" rows="3"></textarea>
+			</span>
+		</label>
+		<label>
+			Image URL:
+			<span class="grow-input">
+			<textarea type="text" id="url-in" class="break-all" rows="3"></textarea>
+			</span>
+		</label>
+	</div>
+	<div id="err"></div>
+	<canvas id="canvas"></canvas>
+</body>
+</html>
