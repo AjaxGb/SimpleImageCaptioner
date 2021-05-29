@@ -7,32 +7,51 @@ const canvas  = id('canvas');
 const errOut  = id('err');
 const ctx = canvas.getContext('2d', { alpha: false });
 
+let currImgUrl = null;
+let currImg = null;
+let currImgLoad = null;
+let currImgAbort = null;
+
 sizeIn.oninput = () => {
 	updateFontSizeOut();
 	renderFromIn();
 };
 titleIn.oninput = () => renderFromIn();
-urlIn.onchange = () => renderFromIn();
+urlIn.oninput = () => {
+	currImgUrl = '';
+	renderFromIn();
+};
 
 function updateFontSizeOut() {
 	sizeOut.innerText = sizeIn.value.padStart(2, '0');
 }
 
-function filterImgUrl(inUrl) {
-	const url = new URL(inUrl);
-	if (url.host === 'preview.redd.it') {
-		url.host = 'i.redd.it';
-		url.search = '';
-	}
-	return url;
-}
-
-function loadImg(url) {
+function loadImg(url, abortSignal) {
 	return new Promise((resolve, reject) => {
 		const img = new Image();
-		img.onerror = () => reject(
-			new Error('Failed to load image from '+url));
-		img.onload = () => resolve(img);
+		img.onerror = () => {
+			clearListeners();
+			reject(new Error('Failed to load image from '+url));
+		};
+		img.onload = () => {
+			clearListeners();
+			resolve(img);
+		};
+		const onAbort = () => {
+			clearListeners();
+			img.src = '';
+			reject(new Error('Image load aborted'));
+		};
+		const clearListeners = () => {
+			if (abortSignal) {
+				abortSignal.removeEventListener('abort', onAbort);
+			}
+			img.onerror = null;
+			img.onload = null;
+		};
+		if (abortSignal) {
+			abortSignal.addEventListener('abort', onAbort);
+		}
 		img.src = url;
 	});
 }
@@ -58,38 +77,65 @@ function wrapLine(ctx, text, maxWidth) {
 }
 
 async function renderFromIn() {
-	const url = filterImgUrl(urlIn.value).href;
-	const fontSize = parseInt(sizeIn.value, 10);
-	await render(url, titleIn.value, fontSize);
+	errOut.hidden = true;
+	canvas.hidden = true;
+	if (urlIn.value) {
+		try {
+			const url = urlIn.value;
+			if (url !== currImgUrl) {
+				if (currImgAbort) {
+					currImgAbort.abort();
+				}
+				currImgUrl = url;
+				currImgAbort = new AbortController();
+				currImgLoad = loadImg(url, currImgAbort.signal);
+				currImg = null;
+			}
+			if (currImgLoad) {
+				currImg = await currImgLoad;
+			} else if (!currImg) {
+				return;
+			}
+			currImg = currImg || await currImgLoad;
+		} catch (e) {
+			currImgLoad = null;
+			errOut.hidden = false;
+			errOut.innerText = 'Failed to load URL';
+			throw e;
+		}
+		const fontSize = parseInt(sizeIn.value, 10) || 20;
+		try {
+			render(currImg, titleIn.value, fontSize);
+			canvas.hidden = false;
+		} catch (e) {
+			errOut.hidden = false;
+			errOut.innerText = 'Failed to render: ' + e;
+			throw e;
+		}
+	}
 }
 
-async function render(imgUrl, title, fontSize) {
-	try {
-		const img = await loadImg(imgUrl);
-		ctx.font = fontSize + 'px arial';
-		const textMarginH = 1 * fontSize;
-		const textMarginV = 1 * fontSize;
-		const lineHeight = 1.2 * fontSize;
-		const titleWidth = img.naturalWidth - 2 * textMarginH;
-		const lines = wrapLine(ctx, title, titleWidth);
-		const titleHeight = (lines.length > 0) ? fontSize + lineHeight * (lines.length - 1) : 0;
-		const titleBoxHeight = Math.ceil(titleHeight + 2 * textMarginV);
-		canvas.width = img.naturalWidth;
-		canvas.height = img.naturalHeight + titleBoxHeight;
-		ctx.font = fontSize + 'px arial';
-		ctx.textBaseline = 'top';
-		ctx.fillStyle = '#fff';
-		ctx.fillRect(0, 0, canvas.width, titleBoxHeight);
-		ctx.drawImage(img, 0, titleBoxHeight);
-		ctx.fillStyle = '#000';
-		let titleY = textMarginV;
-		for (const line of lines) {
-			ctx.fillText(line, textMarginH, titleY);
-			titleY += lineHeight;
-		}
-	} catch (e) {
-		errOut.innerText = e;
-		throw e;
+function render(img, title, fontSize) {
+	ctx.font = fontSize + 'px arial';
+	const textMarginH = 1 * fontSize;
+	const textMarginV = 1 * fontSize;
+	const lineHeight = 1.2 * fontSize;
+	const titleWidth = img.naturalWidth - 2 * textMarginH;
+	const lines = wrapLine(ctx, title, titleWidth);
+	const titleHeight = (lines.length > 0) ? fontSize + lineHeight * (lines.length - 1) : 0;
+	const titleBoxHeight = Math.ceil(titleHeight + 2 * textMarginV);
+	canvas.width = img.naturalWidth;
+	canvas.height = img.naturalHeight + titleBoxHeight;
+	ctx.font = fontSize + 'px arial';
+	ctx.textBaseline = 'top';
+	ctx.fillStyle = '#fff';
+	ctx.fillRect(0, 0, canvas.width, titleBoxHeight);
+	ctx.drawImage(img, 0, titleBoxHeight);
+	ctx.fillStyle = '#000';
+	let titleY = textMarginV;
+	for (const line of lines) {
+		ctx.fillText(line, textMarginH, titleY);
+		titleY += lineHeight;
 	}
 }
 
@@ -104,9 +150,7 @@ function loadFromQuery(queryString) {
 	}
 	titleIn.value = title;
 	urlIn.value = imgUrl;
-	if (title || imgUrl) {
-		renderFromIn();
-	}
+	renderFromIn();
 }
 
 loadFromQuery(location.search);
