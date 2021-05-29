@@ -2,45 +2,8 @@
 <html>
 <head>
 	<title>Simple Image Captioner</title>
-	<style>
-		* {
-			box-sizing: border-box;
-		}
-		body {
-			display: inline-flex;
-			flex-direction: column;
-			align-items: center;
-			min-width: 100%;
-			margin: 10px 0;
-		}
-		.controls {
-			width: 420px;
-			margin-bottom: 10px;
-		}
-		.controls label {
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			margin: 5px 0;
-		}
-		.controls .grow-input {
-			width: 300px;
-			display: flex;
-		}
-		.controls .grow-input input,
-		.controls .grow-input textarea {
-			flex-grow: 1;
-		}
-		.break-all {
-			word-break: break-all;
-		}
-		#err {
-			color: red;
-		}
-		#canvas {
-			box-shadow: 0 0 5px #0005;
-		}
-	</style>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="style.css">
 	<script defer src="captioner.js"></script>
 </head>
 <body>
