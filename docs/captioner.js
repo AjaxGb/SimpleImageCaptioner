@@ -118,12 +118,13 @@ async function renderFromIn() {
 function render(img, title, fontSize) {
 	ctx.font = fontSize + 'px arial';
 	const textMarginH = 1 * fontSize;
-	const textMarginV = 1 * fontSize;
+	const textMarginTop = 1 * fontSize;
+	const textMarginBot = 0.9 * fontSize;
 	const lineHeight = 1.2 * fontSize;
 	const titleWidth = img.naturalWidth - 2 * textMarginH;
 	const lines = wrapLine(ctx, title, titleWidth);
 	const titleHeight = (lines.length > 0) ? fontSize + lineHeight * (lines.length - 1) : 0;
-	const titleBoxHeight = Math.ceil(titleHeight + 2 * textMarginV);
+	const titleBoxHeight = Math.ceil(titleHeight + textMarginTop + textMarginBot);
 	canvas.width = img.naturalWidth;
 	canvas.height = img.naturalHeight + titleBoxHeight;
 	ctx.font = fontSize + 'px arial';
@@ -132,7 +133,7 @@ function render(img, title, fontSize) {
 	ctx.fillRect(0, 0, canvas.width, titleBoxHeight);
 	ctx.drawImage(img, 0, titleBoxHeight);
 	ctx.fillStyle = '#000';
-	let titleY = textMarginV;
+	let titleY = textMarginTop;
 	for (const line of lines) {
 		ctx.fillText(line, textMarginH, titleY);
 		titleY += lineHeight;
